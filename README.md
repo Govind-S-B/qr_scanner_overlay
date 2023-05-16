@@ -21,6 +21,9 @@ It has 2 modes
 one where you can pass in an image path ( only supports images as assets ) as its overlay
 another where you can pass in a color as overlay
 
+![image](https://github.com/Govind-S-B/qr_scanner_overlay/assets/62943847/911c276e-1588-46a8-88e7-85c18e958a7a)
+
+
 ## Getting started
 
 just import the package and use QRScannerOverlay
