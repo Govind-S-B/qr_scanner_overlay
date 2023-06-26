@@ -1,7 +1,4 @@
-## 0.0.1
+## 0.0.2
 
-The Widget provides a qr code scanner style overlay to be used with a stack , qr scanning widget
-
-It has 2 modes
-one where you can pass in an image path ( only supports images as assets ) as its overlay
-another where you can pass in a color as overlay
+Added a few new optional arguments
+https://github.com/Govind-S-B/qr_scanner_overlay/pull/1
