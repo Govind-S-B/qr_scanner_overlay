@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 class InvertedClipper extends CustomClipper<Path> {
-  late double scanArea;
-  InvertedClipper({required this.scanArea});
+  late Size scanArea;
+  late double borderRadius;
+  InvertedClipper({required this.scanArea, this.borderRadius = 20.0});
 
   @override
   Path getClip(Size size) {
@@ -11,9 +12,9 @@ class InvertedClipper extends CustomClipper<Path> {
       ..addRRect(RRect.fromRectAndRadius(
           Rect.fromCenter(
               center: Offset(size.width / 2, size.height / 2),
-              width: scanArea,
-              height: scanArea),
-          const Radius.circular(16)))
+              width: scanArea.width,
+              height: scanArea.height),
+          Radius.circular(borderRadius - 4)))
       ..fillType = PathFillType.evenOdd;
   }
 
@@ -21,32 +22,73 @@ class InvertedClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => true;
 }
 
+// ignore: must_be_immutable
 class QRScannerOverlay extends StatelessWidget {
   late final Widget clippedWidget;
-  QRScannerOverlay({Key? key, String? imagePath, Color? color})
-      : super(key: key) {
-    if ((imagePath == null) && (color == null)) {
-      clippedWidget = const Placeholder();
-    } else if (imagePath != null) {
+  final Color? overlayColor;
+  late final Size? _scanArea;
+  final Color borderColor;
+  final double borderRadius;
+  final double borderStrokeWidth;
+
+  QRScannerOverlay({
+    Key? key,
+    String? imagePath,
+    this.overlayColor = Colors.black54,
+    Size? scanAreaSize,
+    double? scanAreaWidth,
+    double? scanAreaHeight,
+    this.borderColor = Colors.white,
+    this.borderRadius = 20,
+    this.borderStrokeWidth = 4,
+  }) : super(key: key) {
+    // Check preconditions for the the scan area
+    assert(
+      (scanAreaWidth == null && scanAreaHeight == null) ||
+          (scanAreaWidth != null && scanAreaHeight != null),
+      'You must set both scanAreaWidth and scanAreaHeight!',
+    );
+    assert(
+      (scanAreaSize == null) ||
+          ((scanAreaWidth == null) && (scanAreaHeight == null)),
+      'You can only set one of scanAreaSize or scanAreaWidth/scanAreaHeight!',
+    );
+
+    // If scanAreaSize is set, use it over scanAreaWidth and scanAreaHeight
+    if (scanAreaSize != null) {
+      _scanArea = scanAreaSize;
+    } else if (scanAreaWidth != null && scanAreaHeight != null) {
+      _scanArea = Size(scanAreaWidth, scanAreaHeight);
+    } else {
+      _scanArea = null;
+    }
+
+    if (imagePath != null) {
       clippedWidget = Image.asset(
         imagePath,
         fit: BoxFit.cover,
         opacity: const AlwaysStoppedAnimation(.9),
       );
-    } else if (color != null) {
-      clippedWidget = DecoratedBox(decoration: BoxDecoration(color: color));
+    } else {
+      clippedWidget =
+          DecoratedBox(decoration: BoxDecoration(color: overlayColor));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double scanArea = (MediaQuery.of(context).size.width < 400 ||
-            MediaQuery.of(context).size.height < 400)
-        ? 200.0
-        : 330.0;
+    // If no scanAreaSize or scanAreaWidth/scanAreaHeight are set, use a default
+    final standardScanArea = Size.square(
+        (MediaQuery.of(context).size.width < 400 ||
+                MediaQuery.of(context).size.height < 400)
+            ? 200.0
+            : 330.0);
     return Stack(children: [
       ClipPath(
-        clipper: InvertedClipper(scanArea: scanArea),
+        clipper: InvertedClipper(
+          scanArea: _scanArea ?? standardScanArea,
+          borderRadius: borderRadius,
+        ),
         child: SizedBox.expand(
           child: clippedWidget,
         ),
@@ -54,10 +96,14 @@ class QRScannerOverlay extends StatelessWidget {
       Align(
         alignment: Alignment.center,
         child: CustomPaint(
-          foregroundPainter: BorderPainter(),
+          foregroundPainter: BorderPainter(
+            borderRadius: borderRadius,
+            borderColor: borderColor,
+            borderStrokeWidth: borderStrokeWidth,
+          ),
           child: SizedBox(
-            width: scanArea + 25,
-            height: scanArea + 25,
+            width: (_scanArea?.width ?? standardScanArea.width) + 25.0,
+            height: (_scanArea?.height ?? standardScanArea.height) + 25.0,
           ),
         ),
       ),
@@ -67,19 +113,26 @@ class QRScannerOverlay extends StatelessWidget {
 
 // Creates the white borders
 class BorderPainter extends CustomPainter {
+  final double borderRadius;
+  final Color borderColor;
+  final double borderStrokeWidth;
+  const BorderPainter({
+    required this.borderRadius,
+    required this.borderColor,
+    required this.borderStrokeWidth,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    const width = 4.0;
-    const radius = 20.0;
-    const tRadius = 3 * radius;
+    final tRadius = 3 * borderRadius;
     final rect = Rect.fromLTWH(
-      width,
-      width,
-      size.width - 2 * width,
-      size.height - 2 * width,
+      borderStrokeWidth,
+      borderStrokeWidth,
+      size.width - 2 * borderStrokeWidth,
+      size.height - 2 * borderStrokeWidth,
     );
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(radius));
-    const clippingRect0 = Rect.fromLTWH(
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+    final clippingRect0 = Rect.fromLTWH(
       0,
       0,
       tRadius,
@@ -114,9 +167,9 @@ class BorderPainter extends CustomPainter {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = Colors.white
+        ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = width,
+        ..strokeWidth = borderStrokeWidth,
     );
   }
 
@@ -126,10 +179,10 @@ class BorderPainter extends CustomPainter {
   }
 }
 
-class BarReaderSize {
-  static double width = 200;
-  static double height = 200;
-}
+// class BarReaderSize {
+//   static double width = 200;
+//   static double height = 200;
+// }
 
 class OverlayWithHolePainter extends CustomPainter {
   @override
