@@ -46,7 +46,18 @@ return Scaffold(
 ```
 
 ```
-QRScannerOverlay(color: Colors.black.withOpacity(0.5),)
+QRScannerOverlay(overlayColor: Colors.black.withOpacity(0.5),)
+```
+
+### Additional Parameters
+scanAreaSize or scanAreaWidth/scanAreaHeight  
+borderColor  
+borderRadius  
+borderStrokeWidth  
+
+```
+//Example QrScanner
+QrScannerOverlay(scanWidth: 300, scanHeight: 300, borderColor: Colors.red);
 ```
 
 ## Additional information
